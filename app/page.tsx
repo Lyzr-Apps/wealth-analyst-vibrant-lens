@@ -1,12 +1,31 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { callAIAgent } from '@/lib/aiAgent'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Loader2, Send, Menu, X, TrendingUp, TrendingDown, Download, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Separator } from '@/components/ui/separator'
+import {
+  FiSend,
+  FiMenu,
+  FiX,
+  FiTrendingUp,
+  FiTrendingDown,
+  FiDownload,
+  FiRefreshCw,
+  FiChevronLeft,
+  FiChevronRight,
+  FiBarChart2,
+  FiPieChart,
+  FiActivity,
+  FiDollarSign,
+  FiFilter,
+  FiMessageSquare
+} from 'react-icons/fi'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 
 // TypeScript Interfaces based on actual response structure
 interface FourPillarScore {
@@ -79,18 +98,27 @@ export default function Home() {
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>(['NSE', 'BSE', 'CMX', 'US'])
   const [selectedAssetTypes, setSelectedAssetTypes] = useState<string[]>(['stock', 'mutual_fund', 'etf'])
   const [riskLevel, setRiskLevel] = useState('Medium')
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'four_pillar_score.overall_score', direction: 'desc' })
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
+    key: 'four_pillar_score.overall_score',
+    direction: 'desc'
+  })
 
+  const chatEndRef = useRef<HTMLDivElement>(null)
   const AGENT_ID = '6986ef8566daebcd26150dc3'
-  const ITEMS_PER_PAGE = 20
+  const ITEMS_PER_PAGE = 10
 
-  // Market Performance Stats (derived from data)
+  // Market Performance Stats
   const [marketStats, setMarketStats] = useState<MarketStats>({
     NSE: 0.85,
     BSE: 1.2,
     CMX: -0.3,
     US: 0.65
   })
+
+  // Auto-scroll chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chatMessages])
 
   // Handle Agent Call
   const handleSendMessage = async (message?: string) => {
@@ -118,21 +146,14 @@ export default function Home() {
         // Add assistant message
         const assistantMessage: ChatMessage = {
           role: 'assistant',
-          content: data.conversational_insight || 'Analysis complete.',
+          content: data.conversational_insight || data.analysis_summary || 'Analysis complete.',
           timestamp: new Date(),
           data: data,
           metadata: metadata
         }
         setChatMessages(prev => [...prev, assistantMessage])
         setAnalysisData(data)
-
-        // Update market stats based on returned data
-        if (data.ranked_investments) {
-          const markets = data.ranked_investments.reduce((acc, inv) => {
-            acc[inv.market as keyof MarketStats] = (acc[inv.market as keyof MarketStats] || 0) + 1
-            return acc
-          }, {} as Record<string, number>)
-        }
+        setCurrentPage(1) // Reset to first page
       } else {
         const errorMessage: ChatMessage = {
           role: 'assistant',
@@ -156,7 +177,7 @@ export default function Home() {
   // Run Full Analysis
   const handleFullAnalysis = () => {
     const markets = selectedMarkets.join(', ')
-    const assets = selectedAssetTypes.join(', ')
+    const assets = selectedAssetTypes.map(a => a.replace('_', ' ')).join(', ')
     const query = `Give me ${riskLevel.toLowerCase()} risk investment recommendations for ${assets} in ${markets} markets for long-term growth`
     handleSendMessage(query)
   }
@@ -249,13 +270,13 @@ export default function Home() {
     }))
   }
 
-  // Get Recommendation Badge Color
-  const getRecommendationColor = (rec: string) => {
+  // Get Recommendation Badge Style
+  const getRecommendationStyle = (rec: string) => {
     const lower = rec.toLowerCase()
-    if (lower === 'buy') return 'bg-green-500/20 text-green-400 border border-green-500/50'
-    if (lower === 'hold') return 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
-    if (lower === 'sell') return 'bg-red-500/20 text-red-400 border border-red-500/50'
-    return 'bg-gray-500/20 text-gray-400 border border-gray-500/50'
+    if (lower === 'buy') return 'default'
+    if (lower === 'hold') return 'secondary'
+    if (lower === 'sell') return 'destructive'
+    return 'outline'
   }
 
   // Score to Percentage
@@ -280,30 +301,39 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-40">
-        <div className="px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-slate-400 hover:text-white"
-            >
-              {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                Financial Analysis Pro
-              </h1>
-              <p className="text-xs text-slate-400">Powered by AI-driven Four-Pillar Analysis</p>
+      <header className="sticky top-0 z-50 border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg shadow-sm">
+        <div className="container mx-auto px-4 lg:px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="lg:hidden"
+              >
+                {sidebarOpen ? <FiX className="h-5 w-5" /> : <FiMenu className="h-5 w-5" />}
+              </Button>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
+                  <FiBarChart2 className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Financial Analysis Pro
+                  </h1>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
+                    AI-Powered Four-Pillar Investment Analysis
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right text-sm">
-              <div className="text-slate-400">Markets Analyzed</div>
-              <div className="font-semibold">{selectedMarkets.length} Active</div>
+            <div className="flex items-center gap-4">
+              <Badge variant="outline" className="hidden sm:flex gap-2">
+                <FiActivity className="h-3 w-3" />
+                {selectedMarkets.length} Markets Active
+              </Badge>
             </div>
           </div>
         </div>
@@ -311,349 +341,398 @@ export default function Home() {
 
       <div className="flex">
         {/* Left Sidebar - Filters */}
-        {sidebarOpen && (
-          <aside className="w-72 border-r border-slate-800 bg-slate-900/30 backdrop-blur-sm p-6 space-y-6 overflow-y-auto max-h-[calc(100vh-73px)]">
+        <aside className={`${sidebarOpen ? 'w-72' : 'w-0'} transition-all duration-300 overflow-hidden border-r bg-white dark:bg-slate-900/50 h-[calc(100vh-73px)] sticky top-[73px]`}>
+          <div className="p-6 space-y-6 overflow-y-auto h-full">
             <div>
-              <h3 className="text-sm font-semibold text-slate-300 mb-3">Markets</h3>
-              <div className="space-y-2">
-                {['NSE', 'BSE', 'CMX', 'US'].map(market => (
-                  <label key={market} className="flex items-center gap-2 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={selectedMarkets.includes(market)}
-                      onChange={() => toggleMarket(market)}
-                      className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-slate-400 group-hover:text-white transition">{market}</span>
-                  </label>
-                ))}
+              <div className="flex items-center gap-2 mb-4">
+                <FiFilter className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Filters</h3>
               </div>
-            </div>
 
-            <div>
-              <h3 className="text-sm font-semibold text-slate-300 mb-3">Asset Types</h3>
-              <div className="space-y-2">
-                {[
-                  { value: 'stock', label: 'Stocks' },
-                  { value: 'mutual_fund', label: 'Mutual Funds' },
-                  { value: 'etf', label: 'ETFs' }
-                ].map(asset => (
-                  <label key={asset.value} className="flex items-center gap-2 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={selectedAssetTypes.includes(asset.value)}
-                      onChange={() => toggleAssetType(asset.value)}
-                      className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-slate-400 group-hover:text-white transition">{asset.label}</span>
-                  </label>
-                ))}
+              {/* Markets */}
+              <div className="mb-6">
+                <h4 className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">
+                  Markets
+                </h4>
+                <div className="space-y-2">
+                  {['NSE', 'BSE', 'CMX', 'US'].map(market => (
+                    <label key={market} className="flex items-center gap-3 cursor-pointer group p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                      <input
+                        type="checkbox"
+                        checked={selectedMarkets.includes(market)}
+                        onChange={() => toggleMarket(market)}
+                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-slate-700 dark:text-slate-300 font-medium">
+                        {market}
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div>
-              <h3 className="text-sm font-semibold text-slate-300 mb-3">Risk Profile</h3>
-              <div className="space-y-2">
-                {['Conservative', 'Medium', 'Aggressive'].map(risk => (
-                  <label key={risk} className="flex items-center gap-2 cursor-pointer group">
-                    <input
-                      type="radio"
-                      name="risk"
-                      value={risk}
-                      checked={riskLevel === risk}
-                      onChange={(e) => setRiskLevel(e.target.value)}
-                      className="w-4 h-4 border-slate-600 bg-slate-800 text-blue-500 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-slate-400 group-hover:text-white transition">{risk}</span>
-                  </label>
-                ))}
+              <Separator className="my-4" />
+
+              {/* Asset Types */}
+              <div className="mb-6">
+                <h4 className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">
+                  Asset Types
+                </h4>
+                <div className="space-y-2">
+                  {[
+                    { value: 'stock', label: 'Stocks', icon: FiTrendingUp },
+                    { value: 'mutual_fund', label: 'Mutual Funds', icon: FiPieChart },
+                    { value: 'etf', label: 'ETFs', icon: FiActivity }
+                  ].map(asset => (
+                    <label key={asset.value} className="flex items-center gap-3 cursor-pointer group p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                      <input
+                        type="checkbox"
+                        checked={selectedAssetTypes.includes(asset.value)}
+                        onChange={() => toggleAssetType(asset.value)}
+                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                      />
+                      <asset.icon className="h-4 w-4 text-slate-500" />
+                      <span className="text-sm text-slate-700 dark:text-slate-300 font-medium">
+                        {asset.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <Button
-              variant="ghost"
-              onClick={handleClearFilters}
-              className="w-full text-sm text-slate-400 hover:text-white"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Clear Filters
-            </Button>
-          </aside>
-        )}
+              <Separator className="my-4" />
+
+              {/* Risk Profile */}
+              <div className="mb-6">
+                <h4 className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">
+                  Risk Profile
+                </h4>
+                <div className="space-y-2">
+                  {['Conservative', 'Medium', 'Aggressive'].map(risk => (
+                    <label key={risk} className="flex items-center gap-3 cursor-pointer group p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                      <input
+                        type="radio"
+                        name="risk"
+                        value={risk}
+                        checked={riskLevel === risk}
+                        onChange={(e) => setRiskLevel(e.target.value)}
+                        className="w-4 h-4 border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-slate-700 dark:text-slate-300 font-medium">
+                        {risk}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={handleClearFilters}
+                className="w-full mt-4"
+                size="sm"
+              >
+                <FiRefreshCw className="h-4 w-4 mr-2" />
+                Reset Filters
+              </Button>
+            </div>
+          </div>
+        </aside>
 
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto">
-          {/* Market Overview Cards */}
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Object.entries(marketStats).map(([market, change]) => (
-              <Card key={market} className="bg-slate-900/50 border-slate-800">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-slate-400">{market} Market</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <span className={`text-2xl font-bold ${change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          <div className="container mx-auto px-4 lg:px-6 py-6 space-y-6">
+            {/* Market Overview Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {Object.entries(marketStats).map(([market, change]) => (
+                <Card key={market} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                        {market}
+                      </span>
+                      {change >= 0 ? (
+                        <FiTrendingUp className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <FiTrendingDown className="h-5 w-5 text-red-500" />
+                      )}
+                    </div>
+                    <div className={`text-2xl font-bold ${change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                       {change >= 0 ? '+' : ''}{change.toFixed(2)}%
-                    </span>
-                    {change >= 0 ? (
-                      <TrendingUp className="h-8 w-8 text-green-400" />
-                    ) : (
-                      <TrendingDown className="h-8 w-8 text-red-400" />
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Today's performance
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-          <div className="p-6 flex gap-6">
-            {/* Chat Panel - Left 40% */}
-            <div className="w-2/5 flex flex-col">
-              <Card className="bg-slate-900/50 border-slate-800 flex-1 flex flex-col h-[600px]">
-                <CardHeader>
-                  <CardTitle className="text-lg">AI Analysis Chat</CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1 flex flex-col overflow-hidden">
-                  {/* Messages */}
-                  <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2">
-                    {chatMessages.length === 0 ? (
-                      <div className="text-center text-slate-500 mt-8">
-                        <p className="text-sm">Ask about markets, stocks, or get personalized recommendations</p>
-                        <p className="text-xs mt-2">Try "Give me buy recommendations for long-term investments"</p>
-                      </div>
-                    ) : (
-                      chatMessages.map((msg, idx) => (
-                        <div
-                          key={idx}
-                          className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                        >
-                          <div
-                            className={`max-w-[85%] rounded-lg px-4 py-2 ${
-                              msg.role === 'user'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-slate-800 text-slate-200'
-                            }`}
-                          >
-                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                            <p className="text-xs opacity-60 mt-1">
-                              {msg.timestamp.toLocaleTimeString()}
+            {/* Main Dashboard Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+              {/* Chat Panel - Left Side */}
+              <div className="lg:col-span-2">
+                <Card className="h-[700px] flex flex-col">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <FiMessageSquare className="h-5 w-5 text-blue-600" />
+                      <CardTitle>AI Investment Assistant</CardTitle>
+                    </div>
+                    <CardDescription>
+                      Ask about markets, get recommendations, or run full analysis
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-1 flex flex-col overflow-hidden p-4">
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2">
+                      {chatMessages.length === 0 ? (
+                        <div className="flex items-center justify-center h-full">
+                          <div className="text-center space-y-3 max-w-sm">
+                            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 flex items-center justify-center mx-auto">
+                              <FiMessageSquare className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
+                              Start a conversation
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-500">
+                              Ask about top performers, dividend stocks, or request personalized recommendations
                             </p>
                           </div>
                         </div>
-                      ))
-                    )}
-                    {loading && (
-                      <div className="flex justify-start">
-                        <div className="bg-slate-800 text-slate-200 rounded-lg px-4 py-2">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Input */}
-                  <div className="flex gap-2">
-                    <Input
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && !loading && handleSendMessage()}
-                      placeholder="Ask about markets, stocks, or get recommendations..."
-                      disabled={loading}
-                      className="flex-1 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
-                    />
-                    <Button
-                      onClick={() => handleSendMessage()}
-                      disabled={loading || !inputMessage.trim()}
-                      size="icon"
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      {loading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <Send className="h-4 w-4" />
+                        <>
+                          {chatMessages.map((msg, idx) => (
+                            <div
+                              key={idx}
+                              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                            >
+                              <div
+                                className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-sm ${
+                                  msg.role === 'user'
+                                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
+                                    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700'
+                                }`}
+                              >
+                                <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                                  {msg.content}
+                                </p>
+                                <p className={`text-xs mt-2 ${msg.role === 'user' ? 'text-blue-100' : 'text-slate-500'}`}>
+                                  {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                          {loading && (
+                            <div className="flex justify-start">
+                              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3">
+                                <div className="flex gap-2">
+                                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          <div ref={chatEndRef} />
+                        </>
                       )}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                    </div>
 
-            {/* Data Visualization - Right 60% */}
-            <div className="w-3/5 space-y-6">
-              {/* Action Bar */}
-              <div className="flex items-center justify-between">
-                <Button
-                  onClick={handleFullAnalysis}
-                  disabled={loading}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Analyzing...
-                    </>
-                  ) : (
-                    'Run Full Analysis'
-                  )}
-                </Button>
-                <div className="flex gap-2">
+                    {/* Input */}
+                    <div className="flex gap-2">
+                      <Input
+                        value={inputMessage}
+                        onChange={(e) => setInputMessage(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && !loading && handleSendMessage()}
+                        placeholder="Ask me anything about investments..."
+                        disabled={loading}
+                        className="flex-1"
+                      />
+                      <Button
+                        onClick={() => handleSendMessage()}
+                        disabled={loading || !inputMessage.trim()}
+                        size="icon"
+                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                      >
+                        <FiSend className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Data Visualization - Right Side */}
+              <div className="lg:col-span-3 space-y-6">
+                {/* Action Bar */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                  <Button
+                    onClick={handleFullAnalysis}
+                    disabled={loading}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
+                    size="lg"
+                  >
+                    <FiActivity className="h-4 w-4 mr-2" />
+                    {loading ? 'Analyzing...' : 'Run Full Analysis'}
+                  </Button>
                   <Button
                     variant="outline"
                     onClick={handleExportCSV}
                     disabled={!analysisData?.csv_export_data}
-                    className="border-slate-700 hover:bg-slate-800"
                   >
-                    <Download className="h-4 w-4 mr-2" />
+                    <FiDownload className="h-4 w-4 mr-2" />
                     Export CSV
                   </Button>
                 </div>
-              </div>
 
-              {/* Rankings Table */}
-              {analysisData && filteredInvestments.length > 0 ? (
-                <Card className="bg-slate-900/50 border-slate-800">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Investment Rankings</CardTitle>
-                    <p className="text-sm text-slate-400">
-                      Showing {filteredInvestments.length} investments • Click row for details
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead className="sticky top-0 bg-slate-900 border-b border-slate-700">
-                          <tr>
-                            <th className="text-left p-3 text-slate-400 font-medium">Rank</th>
-                            <th
-                              className="text-left p-3 text-slate-400 font-medium cursor-pointer hover:text-white"
-                              onClick={() => handleSort('symbol')}
-                            >
-                              Symbol
-                            </th>
-                            <th
-                              className="text-left p-3 text-slate-400 font-medium cursor-pointer hover:text-white"
-                              onClick={() => handleSort('name')}
-                            >
-                              Name
-                            </th>
-                            <th className="text-left p-3 text-slate-400 font-medium">Market</th>
-                            <th className="text-left p-3 text-slate-400 font-medium">Type</th>
-                            <th
-                              className="text-left p-3 text-slate-400 font-medium cursor-pointer hover:text-white"
-                              onClick={() => handleSort('four_pillar_score.overall_score')}
-                            >
-                              Score
-                            </th>
-                            <th className="text-left p-3 text-slate-400 font-medium">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {paginatedInvestments.map((investment, idx) => (
-                            <tr
-                              key={investment.symbol}
-                              onClick={() => {
-                                setSelectedInvestment(investment)
-                                setModalOpen(true)
-                              }}
-                              className="border-b border-slate-800 hover:bg-slate-800/50 cursor-pointer transition"
-                            >
-                              <td className="p-3 text-slate-300">
-                                {(currentPage - 1) * ITEMS_PER_PAGE + idx + 1}
-                              </td>
-                              <td className="p-3 font-semibold text-blue-400">{investment.symbol}</td>
-                              <td className="p-3 text-slate-300">{investment.name}</td>
-                              <td className="p-3">
-                                <span className="px-2 py-1 bg-slate-800 rounded text-xs">
-                                  {investment.market}
-                                </span>
-                              </td>
-                              <td className="p-3 text-slate-400 capitalize">
-                                {investment.asset_type.replace('_', ' ')}
-                              </td>
-                              <td className="p-3">
-                                <span className="font-bold text-green-400">
+                {/* Rankings Table */}
+                {analysisData && filteredInvestments.length > 0 ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <FiBarChart2 className="h-5 w-5 text-blue-600" />
+                        Investment Rankings
+                      </CardTitle>
+                      <CardDescription>
+                        {filteredInvestments.length} investments ranked by four-pillar score
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {paginatedInvestments.map((investment, idx) => (
+                          <div
+                            key={investment.symbol}
+                            onClick={() => {
+                              setSelectedInvestment(investment)
+                              setModalOpen(true)
+                            }}
+                            className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer bg-white dark:bg-slate-800/50"
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <span className="text-lg font-bold text-slate-700 dark:text-slate-200">
+                                    {(currentPage - 1) * ITEMS_PER_PAGE + idx + 1}
+                                  </span>
+                                  <div>
+                                    <h4 className="font-semibold text-blue-600 dark:text-blue-400">
+                                      {investment.symbol}
+                                    </h4>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400 truncate">
+                                      {investment.name}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2 mt-2">
+                                  <Badge variant="secondary" className="text-xs">
+                                    {investment.market}
+                                  </Badge>
+                                  <Badge variant="outline" className="text-xs capitalize">
+                                    {investment.asset_type.replace('_', ' ')}
+                                  </Badge>
+                                  <Badge variant={getRecommendationStyle(investment.recommendation)} className="text-xs">
+                                    {investment.recommendation}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                                   {investment.four_pillar_score.overall_score}
-                                </span>
-                              </td>
-                              <td className="p-3">
-                                <span className={`px-2 py-1 rounded text-xs uppercase font-semibold ${getRecommendationColor(investment.recommendation)}`}>
-                                  {investment.recommendation}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  Overall Score
+                                </p>
+                              </div>
+                            </div>
+                            <Progress
+                              value={scoreToPercentage(investment.four_pillar_score.overall_score)}
+                              className="mt-3 h-1.5"
+                            />
+                          </div>
+                        ))}
+                      </div>
 
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-800">
-                        <div className="text-sm text-slate-400">
-                          Page {currentPage} of {totalPages}
+                      {/* Pagination */}
+                      {totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                          <div className="text-sm text-slate-600 dark:text-slate-400">
+                            Page {currentPage} of {totalPages}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                              disabled={currentPage === 1}
+                            >
+                              <FiChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                              disabled={currentPage === totalPages}
+                            >
+                              <FiChevronRight className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                            className="border-slate-700"
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages}
-                            className="border-slate-700"
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardContent className="py-16 text-center">
+                      <div className="flex flex-col items-center gap-4 max-w-md mx-auto">
+                        <div className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 flex items-center justify-center">
+                          <FiBarChart2 className="h-10 w-10 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                            No Analysis Yet
+                          </h3>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">
+                            Click "Run Full Analysis" or ask a question in the chat to get investment insights
+                          </p>
                         </div>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card className="bg-slate-900/50 border-slate-800">
-                  <CardContent className="py-12 text-center text-slate-500">
-                    <p>No analysis data yet. Click "Run Full Analysis" or ask a question to get started.</p>
-                  </CardContent>
-                </Card>
-              )}
+                    </CardContent>
+                  </Card>
+                )}
 
-              {/* Performance Chart */}
-              {analysisData?.chart_data && (
-                <Card className="bg-slate-900/50 border-slate-800">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Performance Comparison</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-64 flex items-end justify-around gap-4 pb-8">
-                      {analysisData.chart_data.data?.[0]?.x?.map((symbol: string, idx: number) => {
-                        const score = analysisData.chart_data.data[0].y[idx]
-                        const height = (score / 10) * 100
-                        return (
-                          <div key={symbol} className="flex flex-col items-center flex-1">
-                            <div className="text-xs text-slate-400 mb-2 font-semibold">
-                              {score.toFixed(1)}
+                {/* Performance Chart */}
+                {analysisData?.chart_data && analysisData.chart_data.data?.[0]?.x?.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <FiPieChart className="h-5 w-5 text-purple-600" />
+                        Performance Comparison
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-80 flex items-end justify-around gap-3 px-4">
+                        {analysisData.chart_data.data[0].x.map((symbol: string, idx: number) => {
+                          const score = analysisData.chart_data.data[0].y[idx]
+                          const height = (score / 10) * 100
+                          return (
+                            <div key={symbol} className="flex flex-col items-center flex-1 max-w-[100px]">
+                              <div className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                                {score.toFixed(1)}
+                              </div>
+                              <div
+                                className="w-full bg-gradient-to-t from-blue-600 to-purple-600 rounded-t-lg transition-all duration-500 hover:from-blue-500 hover:to-purple-500 cursor-pointer shadow-lg"
+                                style={{ height: `${height}%`, minHeight: '30px' }}
+                              />
+                              <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mt-2 text-center">
+                                {symbol}
+                              </div>
                             </div>
-                            <div
-                              className="w-full bg-gradient-to-t from-blue-600 to-purple-600 rounded-t transition-all duration-500 hover:from-blue-500 hover:to-purple-500"
-                              style={{ height: `${height}%`, minHeight: '20px' }}
-                            />
-                            <div className="text-xs text-slate-300 mt-2 font-medium">
-                              {symbol}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                          )
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </div>
           </div>
         </main>
@@ -661,91 +740,108 @@ export default function Home() {
 
       {/* Investment Detail Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-800 text-white">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           {selectedInvestment && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-2xl flex items-center gap-3">
+                <DialogTitle className="text-2xl flex items-center gap-3 flex-wrap">
                   <span>{selectedInvestment.name}</span>
-                  <span className="text-sm px-2 py-1 bg-slate-800 rounded font-normal">
-                    {selectedInvestment.market}
-                  </span>
+                  <Badge variant="secondary">{selectedInvestment.market}</Badge>
+                  <Badge variant={getRecommendationStyle(selectedInvestment.recommendation)}>
+                    {selectedInvestment.recommendation}
+                  </Badge>
                 </DialogTitle>
-                <div className="flex items-center gap-4 mt-2">
-                  <div>
-                    <span className="text-sm text-slate-400">Symbol: </span>
-                    <span className="text-lg font-semibold text-blue-400">{selectedInvestment.symbol}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm text-slate-400">Price: </span>
-                    <span className="text-lg font-semibold">{selectedInvestment.key_metrics.current_price}</span>
-                  </div>
-                  <div>
-                    <span className={`px-3 py-1 rounded text-sm uppercase font-semibold ${getRecommendationColor(selectedInvestment.recommendation)}`}>
-                      {selectedInvestment.recommendation}
+                <DialogDescription className="flex items-center gap-4 mt-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-slate-500 dark:text-slate-400">Symbol:</span>
+                    <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                      {selectedInvestment.symbol}
                     </span>
                   </div>
-                </div>
+                  <div className="flex items-center gap-2">
+                    <FiDollarSign className="h-4 w-4 text-slate-500" />
+                    <span className="text-lg font-semibold">
+                      {selectedInvestment.key_metrics.current_price}
+                    </span>
+                  </div>
+                </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-6 mt-6">
                 {/* Four Pillar Scores */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Four-Pillar Score Breakdown</h3>
-                  <div className="space-y-3">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <FiActivity className="h-5 w-5 text-blue-600" />
+                    Four-Pillar Score Breakdown
+                  </h3>
+                  <div className="space-y-4">
                     {[
                       { label: 'Historical Returns', value: selectedInvestment.four_pillar_score.historical_returns },
                       { label: 'Risk-Adjusted Returns', value: selectedInvestment.four_pillar_score.risk_adjusted_returns },
                       { label: 'Fundamentals', value: selectedInvestment.four_pillar_score.fundamentals },
                       { label: 'Dividends', value: selectedInvestment.four_pillar_score.dividends }
                     ].map(pillar => (
-                      <div key={pillar.label}>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-slate-400">{pillar.label}</span>
-                          <span className="text-slate-300 font-medium">{pillar.value}</span>
+                      <div key={pillar.label} className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4">
+                        <div className="flex justify-between text-sm mb-2">
+                          <span className="font-medium text-slate-700 dark:text-slate-300">
+                            {pillar.label}
+                          </span>
+                          <span className="font-semibold text-blue-600 dark:text-blue-400">
+                            {pillar.value}
+                          </span>
                         </div>
-                        <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-blue-600 to-purple-600 transition-all duration-500"
-                            style={{ width: `${pillarToPercentage(pillar.value)}%` }}
-                          />
-                        </div>
+                        <Progress value={pillarToPercentage(pillar.value)} className="h-2" />
                       </div>
                     ))}
                   </div>
-                  <div className="mt-4 p-4 bg-slate-800/50 rounded-lg">
+                  <div className="mt-4 p-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
                     <div className="flex justify-between items-center">
-                      <span className="text-lg font-semibold">Overall Score</span>
-                      <span className="text-3xl font-bold text-green-400">
+                      <span className="text-lg font-semibold text-slate-700 dark:text-slate-300">
+                        Overall Score
+                      </span>
+                      <span className="text-4xl font-bold text-green-600 dark:text-green-400">
                         {selectedInvestment.four_pillar_score.overall_score}
                       </span>
                     </div>
                   </div>
                 </div>
 
+                <Separator />
+
                 {/* Recommendation */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Recommendation Rationale</h3>
-                  <p className="text-slate-300 text-sm leading-relaxed bg-slate-800/30 p-4 rounded-lg">
-                    {selectedInvestment.recommendation_rationale}
-                  </p>
+                  <h3 className="text-lg font-semibold mb-3">Recommendation Rationale</h3>
+                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4">
+                    <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                      {selectedInvestment.recommendation_rationale}
+                    </p>
+                  </div>
                 </div>
+
+                <Separator />
 
                 {/* Key Metrics */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4">Key Metrics</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[
-                      { label: 'Current Price', value: selectedInvestment.key_metrics.current_price },
-                      { label: 'P/E Ratio', value: selectedInvestment.key_metrics.pe_ratio || 'N/A' },
-                      { label: 'Dividend Yield', value: selectedInvestment.key_metrics.dividend_yield },
-                      { label: '52-Week High', value: selectedInvestment.key_metrics['52_week_high'] },
-                      { label: '52-Week Low', value: selectedInvestment.key_metrics['52_week_low'] },
-                      { label: 'Asset Type', value: selectedInvestment.asset_type.replace('_', ' ').toUpperCase() }
+                      { label: 'Current Price', value: selectedInvestment.key_metrics.current_price, icon: FiDollarSign },
+                      { label: 'P/E Ratio', value: selectedInvestment.key_metrics.pe_ratio || 'N/A', icon: FiBarChart2 },
+                      { label: 'Dividend Yield', value: selectedInvestment.key_metrics.dividend_yield, icon: FiTrendingUp },
+                      { label: '52-Week High', value: selectedInvestment.key_metrics['52_week_high'], icon: FiTrendingUp },
+                      { label: '52-Week Low', value: selectedInvestment.key_metrics['52_week_low'], icon: FiTrendingDown },
+                      { label: 'Asset Type', value: selectedInvestment.asset_type.replace('_', ' ').toUpperCase(), icon: FiPieChart }
                     ].map(metric => (
-                      <div key={metric.label} className="bg-slate-800/30 p-4 rounded-lg">
-                        <div className="text-sm text-slate-400 mb-1">{metric.label}</div>
-                        <div className="text-lg font-semibold">{metric.value}</div>
+                      <div key={metric.label} className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <metric.icon className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+                          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                            {metric.label}
+                          </span>
+                        </div>
+                        <div className="text-lg font-semibold text-slate-700 dark:text-slate-200">
+                          {metric.value}
+                        </div>
                       </div>
                     ))}
                   </div>
