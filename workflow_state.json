@@ -1,0 +1,49 @@
+{
+  "workflow_name": "Financial Analysis Pro",
+  "agent_architecture": "Single Agent",
+  "agents": [
+    {
+      "agent_id": "6986ef8566daebcd26150dc3",
+      "agent_name": "Financial Analysis Agent",
+      "agent_type": "Single",
+      "node_id": "financial_analysis_agent",
+      "description": "Analyzes stocks, mutual funds, and ETFs across NSE, BSE, CMX, and US markets using four-pillar scoring",
+      "model": "gpt-4.1",
+      "provider": "OpenAI",
+      "temperature": 0.4,
+      "top_p": 0.95,
+      "tools": [
+        "nse_market_data",
+        "bse_market_data",
+        "cmx_market_data",
+        "us_market_data"
+      ],
+      "response_schema_file": "response_schemas/financial_analysis_agent_response.json"
+    }
+  ],
+  "workflow_structure": {
+    "nodes": [
+      {
+        "id": "input_node",
+        "type": "Input",
+        "label": "User Query",
+        "nodeCategory": "input"
+      },
+      {
+        "id": "financial_analysis_agent",
+        "type": "Agent",
+        "label": "Financial Analysis Agent",
+        "nodeCategory": "agent",
+        "agent_id": "6986ef8566daebcd26150dc3"
+      }
+    ],
+    "edges": [
+      {
+        "source": "input_node",
+        "target": "financial_analysis_agent"
+      }
+    ]
+  },
+  "created_at": "2026-02-07T00:00:00Z",
+  "status": "complete"
+}

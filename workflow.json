@@ -1,0 +1,23 @@
+{
+  "nodes": [
+    {
+      "id": "input_node",
+      "type": "Input",
+      "label": "User Query",
+      "nodeCategory": "input"
+    },
+    {
+      "id": "financial_analysis_agent",
+      "type": "Agent",
+      "label": "Financial Analysis Agent",
+      "nodeCategory": "agent",
+      "agent_id": "6986ef8566daebcd26150dc3"
+    }
+  ],
+  "edges": [
+    {
+      "source": "input_node",
+      "target": "financial_analysis_agent"
+    }
+  ]
+}

@@ -1,0 +1,369 @@
+{
+  "agent_name": "Financial Analysis Agent",
+  "agent_id": "6986ef8566daebcd26150dc3",
+  "agent_purpose": "financial_analysis",
+  "description": "Response schema for Financial Analysis Agent - provides four-pillar scoring analysis with buy/hold/sell recommendations for stocks, mutual funds, and ETFs across NSE, BSE, CMX, and US markets",
+  "response_schema": {
+    "status": "string",
+    "result": {
+      "conversational_insight": "string",
+      "analysis_summary": "string",
+      "ranked_investments": [
+        {
+          "symbol": "string",
+          "name": "string",
+          "market": "string",
+          "asset_type": "string",
+          "four_pillar_score": {
+            "historical_returns": "string",
+            "risk_adjusted_returns": "string",
+            "fundamentals": "string",
+            "dividends": "string",
+            "overall_score": "string"
+          },
+          "recommendation": "string",
+          "recommendation_rationale": "string",
+          "key_metrics": {
+            "current_price": "string",
+            "pe_ratio": "string",
+            "dividend_yield": "string",
+            "52_week_high": "string",
+            "52_week_low": "string"
+          }
+        }
+      ],
+      "chart_data": {
+        "data": [
+          {
+            "x": [
+              "string"
+            ],
+            "y": [
+              "number"
+            ],
+            "type": "string",
+            "name": "string"
+          }
+        ],
+        "layout": {
+          "title": "string",
+          "xaxis": {
+            "title": "string"
+          },
+          "yaxis": {
+            "title": "string",
+            "range": [
+              "number"
+            ]
+          }
+        },
+        "config": {
+          "displayModeBar": "boolean"
+        }
+      },
+      "csv_export_data": "string"
+    },
+    "metadata": {
+      "agent_name": "string",
+      "timestamp": "string",
+      "markets_analyzed": [
+        "string"
+      ],
+      "analysis_type": "string"
+    }
+  },
+  "example_response": {
+    "status": "success",
+    "result": {
+      "conversational_insight": "For long-term investors, several high-quality opportunities are available across major global markets. Our analysis highlights four investments with strong scores on historical returns, risk-adjusted performance, fundamentals, and dividends (where relevant). These picks balance growth, stability, and diversification, making them ideal for medium- to long-term wealth building.",
+      "analysis_summary": "We evaluated top stocks from NSE and BSE, a leading US mutual fund, and a commodity ETF from CMX. Each investment was scored using the four-pillar approach\u2014prioritizing long-term growth, risk control, strong balance sheets, and (where relevant) consistent dividend payments.",
+      "ranked_investments": [
+        {
+          "symbol": "RELIANCE",
+          "name": "Reliance Industries Limited",
+          "market": "NSE",
+          "asset_type": "stock",
+          "four_pillar_score": {
+            "historical_returns": "Excellent",
+            "risk_adjusted_returns": "Very Good",
+            "fundamentals": "Strong",
+            "dividends": "Moderate",
+            "overall_score": "9.0"
+          },
+          "recommendation": "buy",
+          "recommendation_rationale": "Reliance Industries has demonstrated high historical returns, robust financials, and low volatility, making it a stand-out for long-term investing. Dividend yield is steady, even if not the highest.",
+          "key_metrics": {
+            "current_price": "2850",
+            "pe_ratio": "27.3",
+            "dividend_yield": "0.34%",
+            "52_week_high": "2952",
+            "52_week_low": "2200"
+          }
+        },
+        {
+          "symbol": "TCS",
+          "name": "Tata Consultancy Services",
+          "market": "BSE",
+          "asset_type": "stock",
+          "four_pillar_score": {
+            "historical_returns": "Very Good",
+            "risk_adjusted_returns": "Excellent",
+            "fundamentals": "Excellent",
+            "dividends": "Strong",
+            "overall_score": "8.8"
+          },
+          "recommendation": "buy",
+          "recommendation_rationale": "TCS has a solid track record of shareholder returns, excellent fundamentals, and reliable dividends, supported by global growth.",
+          "key_metrics": {
+            "current_price": "3820",
+            "pe_ratio": "32.1",
+            "dividend_yield": "1.25%",
+            "52_week_high": "4049",
+            "52_week_low": "3082"
+          }
+        },
+        {
+          "symbol": "VFINX",
+          "name": "Vanguard 500 Index Fund",
+          "market": "US",
+          "asset_type": "mutual_fund",
+          "four_pillar_score": {
+            "historical_returns": "Excellent",
+            "risk_adjusted_returns": "Excellent",
+            "fundamentals": "Index-based",
+            "dividends": "Good",
+            "overall_score": "9.2"
+          },
+          "recommendation": "buy",
+          "recommendation_rationale": "Vanguard 500 Index Fund offers diversified, long-term exposure to the US market with outstanding historical and risk-adjusted returns.",
+          "key_metrics": {
+            "current_price": "429",
+            "pe_ratio": "",
+            "dividend_yield": "1.5%",
+            "52_week_high": "432",
+            "52_week_low": "350"
+          }
+        },
+        {
+          "symbol": "GLD",
+          "name": "SPDR Gold Shares ETF",
+          "market": "CMX",
+          "asset_type": "etf",
+          "four_pillar_score": {
+            "historical_returns": "Good",
+            "risk_adjusted_returns": "Good",
+            "fundamentals": "Solid (hard asset)",
+            "dividends": "N/A",
+            "overall_score": "7.7"
+          },
+          "recommendation": "buy",
+          "recommendation_rationale": "GLD provides long-term hedge and diversification. Gold historically preserves wealth and offsets equity volatility.",
+          "key_metrics": {
+            "current_price": "191",
+            "pe_ratio": "N/A",
+            "dividend_yield": "0%",
+            "52_week_high": "202",
+            "52_week_low": "169"
+          }
+        }
+      ],
+      "chart_data": {
+        "data": [
+          {
+            "x": [
+              "RELIANCE",
+              "TCS",
+              "VFINX",
+              "GLD"
+            ],
+            "y": [
+              9.0,
+              8.8,
+              9.2,
+              7.7
+            ],
+            "type": "bar",
+            "name": "Overall Score"
+          }
+        ],
+        "layout": {
+          "title": "Long-Term Buy Recommendations: Four-Pillar Scores",
+          "xaxis": {
+            "title": "Investment"
+          },
+          "yaxis": {
+            "title": "Four-Pillar Overall Score",
+            "range": [
+              7,
+              10
+            ]
+          }
+        },
+        "config": {
+          "displayModeBar": true
+        }
+      },
+      "csv_export_data": "symbol,name,market,asset_type,overall_score,current_price,pe_ratio,dividend_yield,52_week_high,52_week_low\nRELIANCE,Reliance Industries Limited,NSE,stock,9.0,2850,27.3,0.34%,2952,2200\nTCS,Tata Consultancy Services,BSE,stock,8.8,3820,32.1,1.25%,4049,3082\nVFINX,Vanguard 500 Index Fund,US,mutual_fund,9.2,429,,1.5%,432,350\nGLD,SPDR Gold Shares ETF,CMX,etf,7.7,191,N/A,0%,202,169\n"
+    },
+    "metadata": {
+      "agent_name": "Financial Analysis Agent",
+      "timestamp": "2024-06-13T12:00:00Z",
+      "markets_analyzed": [
+        "NSE",
+        "BSE",
+        "CMX",
+        "US"
+      ],
+      "analysis_type": "Top long-term investment buy recommendations (four-pillar methodology)"
+    }
+  },
+  "is_actual_tested": true,
+  "test_timestamp": "2026-02-07T07:56:33.844367",
+  "test_message_used": "Hello, provide a sample response",
+  "actual_test_response": {
+    "status": "success",
+    "result": {
+      "conversational_insight": "For long-term investors, several high-quality opportunities are available across major global markets. Our analysis highlights four investments with strong scores on historical returns, risk-adjusted performance, fundamentals, and dividends (where relevant). These picks balance growth, stability, and diversification, making them ideal for medium- to long-term wealth building.",
+      "analysis_summary": "We evaluated top stocks from NSE and BSE, a leading US mutual fund, and a commodity ETF from CMX. Each investment was scored using the four-pillar approach\u2014prioritizing long-term growth, risk control, strong balance sheets, and (where relevant) consistent dividend payments.",
+      "ranked_investments": [
+        {
+          "symbol": "RELIANCE",
+          "name": "Reliance Industries Limited",
+          "market": "NSE",
+          "asset_type": "stock",
+          "four_pillar_score": {
+            "historical_returns": "Excellent",
+            "risk_adjusted_returns": "Very Good",
+            "fundamentals": "Strong",
+            "dividends": "Moderate",
+            "overall_score": "9.0"
+          },
+          "recommendation": "buy",
+          "recommendation_rationale": "Reliance Industries has demonstrated high historical returns, robust financials, and low volatility, making it a stand-out for long-term investing. Dividend yield is steady, even if not the highest.",
+          "key_metrics": {
+            "current_price": "2850",
+            "pe_ratio": "27.3",
+            "dividend_yield": "0.34%",
+            "52_week_high": "2952",
+            "52_week_low": "2200"
+          }
+        },
+        {
+          "symbol": "TCS",
+          "name": "Tata Consultancy Services",
+          "market": "BSE",
+          "asset_type": "stock",
+          "four_pillar_score": {
+            "historical_returns": "Very Good",
+            "risk_adjusted_returns": "Excellent",
+            "fundamentals": "Excellent",
+            "dividends": "Strong",
+            "overall_score": "8.8"
+          },
+          "recommendation": "buy",
+          "recommendation_rationale": "TCS has a solid track record of shareholder returns, excellent fundamentals, and reliable dividends, supported by global growth.",
+          "key_metrics": {
+            "current_price": "3820",
+            "pe_ratio": "32.1",
+            "dividend_yield": "1.25%",
+            "52_week_high": "4049",
+            "52_week_low": "3082"
+          }
+        },
+        {
+          "symbol": "VFINX",
+          "name": "Vanguard 500 Index Fund",
+          "market": "US",
+          "asset_type": "mutual_fund",
+          "four_pillar_score": {
+            "historical_returns": "Excellent",
+            "risk_adjusted_returns": "Excellent",
+            "fundamentals": "Index-based",
+            "dividends": "Good",
+            "overall_score": "9.2"
+          },
+          "recommendation": "buy",
+          "recommendation_rationale": "Vanguard 500 Index Fund offers diversified, long-term exposure to the US market with outstanding historical and risk-adjusted returns.",
+          "key_metrics": {
+            "current_price": "429",
+            "pe_ratio": "",
+            "dividend_yield": "1.5%",
+            "52_week_high": "432",
+            "52_week_low": "350"
+          }
+        },
+        {
+          "symbol": "GLD",
+          "name": "SPDR Gold Shares ETF",
+          "market": "CMX",
+          "asset_type": "etf",
+          "four_pillar_score": {
+            "historical_returns": "Good",
+            "risk_adjusted_returns": "Good",
+            "fundamentals": "Solid (hard asset)",
+            "dividends": "N/A",
+            "overall_score": "7.7"
+          },
+          "recommendation": "buy",
+          "recommendation_rationale": "GLD provides long-term hedge and diversification. Gold historically preserves wealth and offsets equity volatility.",
+          "key_metrics": {
+            "current_price": "191",
+            "pe_ratio": "N/A",
+            "dividend_yield": "0%",
+            "52_week_high": "202",
+            "52_week_low": "169"
+          }
+        }
+      ],
+      "chart_data": {
+        "data": [
+          {
+            "x": [
+              "RELIANCE",
+              "TCS",
+              "VFINX",
+              "GLD"
+            ],
+            "y": [
+              9.0,
+              8.8,
+              9.2,
+              7.7
+            ],
+            "type": "bar",
+            "name": "Overall Score"
+          }
+        ],
+        "layout": {
+          "title": "Long-Term Buy Recommendations: Four-Pillar Scores",
+          "xaxis": {
+            "title": "Investment"
+          },
+          "yaxis": {
+            "title": "Four-Pillar Overall Score",
+            "range": [
+              7,
+              10
+            ]
+          }
+        },
+        "config": {
+          "displayModeBar": true
+        }
+      },
+      "csv_export_data": "symbol,name,market,asset_type,overall_score,current_price,pe_ratio,dividend_yield,52_week_high,52_week_low\nRELIANCE,Reliance Industries Limited,NSE,stock,9.0,2850,27.3,0.34%,2952,2200\nTCS,Tata Consultancy Services,BSE,stock,8.8,3820,32.1,1.25%,4049,3082\nVFINX,Vanguard 500 Index Fund,US,mutual_fund,9.2,429,,1.5%,432,350\nGLD,SPDR Gold Shares ETF,CMX,etf,7.7,191,N/A,0%,202,169\n"
+    },
+    "metadata": {
+      "agent_name": "Financial Analysis Agent",
+      "timestamp": "2024-06-13T12:00:00Z",
+      "markets_analyzed": [
+        "NSE",
+        "BSE",
+        "CMX",
+        "US"
+      ],
+      "analysis_type": "Top long-term investment buy recommendations (four-pillar methodology)"
+    }
+  },
+  "test_passed": true
+}
